@@ -74,7 +74,7 @@ Offsets are into the full 64-byte report.
 | 9 | `0xB4` track loaded, `0x10` empty |
 | 11-14 | elapsed time: minutes, seconds, milliseconds (LE16) |
 | 15-18 | track length, same format |
-| 21-22 | BPM: integer, then the two decimals as nibbles (`96 90` = 150.90) |
+| 21-22 | BPM: integer, then tenths in the high nibble; low nibble 0 (`96 90` = 150.9; a non-zero low nibble shows 999.99) |
 | 23-24 | tempo in 0.01 % steps, signed LE16 (`e8 03` = +10.00 %) |
 | 27 | `0x80` |
 | 29-32, 53-56 | cue point time |

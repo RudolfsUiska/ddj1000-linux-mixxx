@@ -142,8 +142,10 @@ class Deck:
         f[9], f[58] = 0xB4, 0x01
         f[11:15] = time_field(self.position)
         f[15:19] = time_field(self.duration)
-        bpm = round(self.bpm * 100)
-        f[21], f[22] = min(bpm // 100, 255), ((bpm // 10) % 10) << 4 | (bpm % 10)
+        # BPM: integer, then tenths in the high nibble. rekordbox leaves the low
+        # nibble 0; anything else makes the screen show 999.99.
+        bpm = round(self.bpm * 10)
+        f[21], f[22] = min(bpm // 10, 255), (bpm % 10) << 4
         f[38], f[39] = f[21], f[22]
         f[23:25] = max(-32768, min(32767, round(self.pitch * 100))).to_bytes(2, "little", signed=True)
         if self.cue >= 0:
