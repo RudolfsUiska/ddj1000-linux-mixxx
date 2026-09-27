@@ -16,7 +16,7 @@ var PioneerDDJ1000Screens = {};
 PioneerDDJ1000Screens.timer = 0;
 
 PioneerDDJ1000Screens.init = function() {
-    PioneerDDJ1000Screens.timer = engine.beginTimer(40, PioneerDDJ1000Screens.tick);
+    PioneerDDJ1000Screens.timer = engine.beginTimer(20, PioneerDDJ1000Screens.tick);
 };
 
 PioneerDDJ1000Screens.shutdown = function() {

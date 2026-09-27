@@ -45,9 +45,15 @@ DRIVER_CHECK_INTERVAL = 5
 # frame every tick, paused/empty decks every IDLE_EVERY ticks.
 TICK = 0.01
 IDLE_EVERY = 10
-# Mixxx reports positions every 40 ms; in between, the position is advanced
-# locally for at most this long.
+# Mixxx reports positions every 20 ms, and they move in audio-buffer steps
+# (~23 ms), so snapping to each report makes the platter jitter. A playing
+# deck's position instead runs on a smoothing clock: it always moves forward
+# at the track speed, reports only trim that speed (up to MAX_CORRECTION), and
+# it snaps only when a report is further off than SNAP_MS (cue, seek, loop).
 MAX_EXTRAPOLATION = 0.25
+SNAP_MS = 100.0
+CORRECTION_GAIN = 1 / 800.0
+MAX_CORRECTION = 0.05
 
 
 class UsbCtrl(ctypes.Structure):
@@ -132,14 +138,41 @@ class Deck:
         self.cue = -1
         self.phase = 0
         self.stamp = 0.0    # time.monotonic() of the last Mixxx update
+        self.clock = None   # smoothing clock: [position ms, time, correction]
+        self.clock_running = False
+        self.last_shown = None
         self.track = None   # (duration_ms, file_bpm) of the track whose data was sent
 
+    def speed(self):
+        return 1 + self.pitch / 100
+
+    def observe(self, now):
+        """Feed a Mixxx position report into the smoothing clock."""
+        if not self.playing or self.clock is None or not self.clock_running:
+            # Paused, or (re)starting: restart the clock from the report.
+            self.clock = [float(self.position), now, 0.0]
+            self.clock_running = self.playing
+            self.last_shown = None
+            return
+        pos, since, corr = self.clock
+        predicted = pos + (now - since) * 1000 * self.speed() * (1 + corr)
+        error = self.position - predicted
+        if abs(error) > SNAP_MS:
+            self.clock = [float(self.position), now, 0.0]
+            self.last_shown = None
+        else:
+            corr = max(-MAX_CORRECTION, min(MAX_CORRECTION, error * CORRECTION_GAIN))
+            self.clock = [predicted, now, corr]
+
     def current_position(self, now):
-        """Last reported position, advanced at the playing speed since then."""
-        if not self.playing or not self.stamp:
+        if not self.playing or self.clock is None:
             return self.position
-        elapsed = min(max(now - self.stamp, 0.0), MAX_EXTRAPOLATION)
-        position = self.position + elapsed * 1000 * (1 + self.pitch / 100)
+        pos, since, corr = self.clock
+        elapsed = min(max(now - since, 0.0), MAX_EXTRAPOLATION)
+        position = pos + elapsed * 1000 * self.speed() * (1 + corr)
+        if self.last_shown is not None and position < self.last_shown and self.speed() > 0:
+            position = self.last_shown         # never step backwards while playing
+        self.last_shown = position
         return max(0, min(position, self.duration))
 
     def status(self, now):
@@ -305,6 +338,7 @@ class Screens:
             cue = num(21, 4)
             deck.cue = -1 if cue == 0x0FFFFFFF else cue
             deck.phase = num(25, 3)
+            deck.observe(deck.stamp)
         if time.time() - self.last_state > 2:
             log.info("receiving deck state from Mixxx")
         self.last_state = time.time()
