@@ -41,6 +41,13 @@ STATE_MAGIC = [0x7D, 0x44, 0x31]  # F0 7D 44 31 <deck> ... F7 (non-commercial ID
 
 USBDEVFS_CONTROL = 0xC0185500
 DRIVER_CHECK_INTERVAL = 5
+# Status frames: rekordbox sends ~120/s to a playing deck. Playing decks get a
+# frame every tick, paused/empty decks every IDLE_EVERY ticks.
+TICK = 0.01
+IDLE_EVERY = 10
+# Mixxx reports positions every 40 ms; in between, the position is advanced
+# locally for at most this long.
+MAX_EXTRAPOLATION = 0.25
 
 
 class UsbCtrl(ctypes.Structure):
@@ -124,12 +131,22 @@ class Deck:
         self.shift = 0
         self.cue = -1
         self.phase = 0
+        self.stamp = 0.0    # time.monotonic() of the last Mixxx update
         self.track = None   # (duration_ms, file_bpm) of the track whose data was sent
 
-    def status(self):
+    def current_position(self, now):
+        """Last reported position, advanced at the playing speed since then."""
+        if not self.playing or not self.stamp:
+            return self.position
+        elapsed = min(max(now - self.stamp, 0.0), MAX_EXTRAPOLATION)
+        position = self.position + elapsed * 1000 * (1 + self.pitch / 100)
+        return max(0, min(position, self.duration))
+
+    def status(self, now):
         f = bytearray(64)
         f[0], f[1], f[4] = self.number << 4, 0x21, 0x21
-        at_cue = self.cue >= 0 and abs(self.position - self.cue) < 50
+        position = self.current_position(now)
+        at_cue = self.cue >= 0 and abs(position - self.cue) < 50
         f[2] = 0x18 if self.playing or not self.loaded or at_cue else 0x1A
         f[3] = 0x0A if self.leader else 0x08
         f[5] = 0x81 if self.leader else 0x01
@@ -140,7 +157,7 @@ class Deck:
             f[9] = 0x10
             return bytes(f)
         f[9], f[58] = 0xB4, 0x01
-        f[11:15] = time_field(self.position)
+        f[11:15] = time_field(position)
         f[15:19] = time_field(self.duration)
         # BPM: integer, then tenths in the high nibble. rekordbox leaves the low
         # nibble 0; anything else makes the screen show 999.99.
@@ -278,6 +295,7 @@ class Screens:
             deck.playing = bool(v[1] & 2)
             deck.leader = bool(v[1] & 4)
             deck.position = num(2, 4)
+            deck.stamp = time.monotonic()
             deck.duration = num(6, 4)
             deck.bpm = num(10, 3) / 100
             deck.file_bpm = num(13, 3) / 100
@@ -433,7 +451,10 @@ class Screens:
 
         last_keepalive = 0
         last_announce = 0
-        was_running = False
+        last_audio_check = 0
+        was_running = running = False
+        tick = 0
+        next_tick = time.monotonic()
         while True:
             if not self.connected:
                 if not self.connect():
@@ -445,7 +466,9 @@ class Screens:
                 if now - last_keepalive >= 0.2:
                     self.send_midi(ddj_link.KEEPALIVE)
                     last_keepalive = now
-                running = audio_running()
+                if now - last_audio_check >= 1:
+                    running = audio_running()
+                    last_audio_check = now
                 if (running and not was_running) or now - last_announce >= DRIVER_CHECK_INTERVAL:
                     if running and not was_running:
                         log.info("audio stream started; announcing driver")
@@ -459,9 +482,12 @@ class Screens:
                     with self.lock:
                         for deck in self.decks.values():
                             deck.loaded = False
+                tick += 1
                 with self.lock:
                     decks = list(self.decks.values())
-                    frames = [d.status() for d in decks]
+                    mono = time.monotonic()
+                    frames = [d.status(mono) for d in decks
+                              if d.playing or tick % IDLE_EVERY == 0]
                     changed = [d for d in decks
                                if d.track != ((d.duration, round(d.file_bpm, 1)) if d.loaded else None)]
                     for d in changed:
@@ -476,11 +502,17 @@ class Screens:
                     self.hid_write(chunked(n, 0x2C, data))
                 for frame in frames:
                     self.hid_write([frame])
-                time.sleep(0.03)
+                next_tick += TICK
+                delay = next_tick - time.monotonic()
+                if delay > 0:
+                    time.sleep(delay)
+                else:
+                    next_tick = time.monotonic()   # fell behind; don't try to catch up
             except (OSError, rtmidi.SystemError) as e:
                 log.warning("DDJ-1000 connection lost: %s", e)
                 self.close()
                 time.sleep(2)
+                next_tick = time.monotonic()
 
 
 if __name__ == "__main__":
