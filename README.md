@@ -19,7 +19,8 @@ in [Mixxx](https://mixxx.org):
 
 - Debian, Ubuntu, Linux Mint or similar (the installer uses `apt`)
 - Linux kernel 6.6 or newer (`uname -r`)
-- Mixxx 2.5 or newer (`sudo add-apt-repository ppa:mixxx/mixxx && sudo apt install mixxx`)
+- Mixxx 2.5 or newer (`sudo add-apt-repository ppa:mixxx/mixxx && sudo apt install mixxx`).
+  Tested with Mixxx 2.5.6 and a 2.7 alpha build (see *Bar markers* below).
 
 ## Install
 
@@ -90,6 +91,34 @@ On the DDJ-1000, set every channel's **INPUT SELECT** switch to the USB port
   python3 ~/.local/share/ddj1000-screens/precache_waveforms.py
   ```
 
+## Bar markers in the waveform (optional)
+
+rekordbox marks the first beat of every bar (every 4 beats) in the waveform.
+Mixxx 2.5 draws all beats the same. The feature is proposed for Mixxx in
+[pull request #16491](https://github.com/mixxxdj/mixxx/pull/16491)
+("Display downbeats"), which is not part of an official release yet.
+
+To use it now, install that pull request's test build (Mixxx 2.7 alpha).
+Everything in this repository works with it.
+
+1. On the pull request page open **Checks**, pick the latest
+   *Pull request or branch build* run, and download the
+   `mixxx-2.7-alpha-...-x86_64.deb` artifact (needs a GitHub login).
+2. Either install it over the stable version (`sudo apt install ./mixxx-*.deb`)
+   or unpack it next to it:
+   ```sh
+   sudo dpkg-deb -x mixxx-*.deb /opt/mixxx-2.7-alpha
+   /opt/mixxx-2.7-alpha/usr/bin/mixxx --resource-path /opt/mixxx-2.7-alpha/usr/share/mixxx/
+   ```
+   The unpacked copy may need
+   `qml6-module-qt-labs-folderlistmodel qml6-module-qtmultimedia qml6-module-qtquick-dialogs libqt6multimedia6`.
+   Back up `~/.mixxx` before letting an alpha use it.
+3. **Preferences -> Waveforms -> Display downbeats**, distance **4**.
+
+Bars are counted from each track's **intro start** marker; if the markers are
+a beat off, move the intro start onto the first beat of a bar. It is an alpha
+build: keep the stable version at hand for gigs.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -99,6 +128,7 @@ On the DDJ-1000, set every channel's **INPUT SELECT** switch to the USB port
 | Jog screens show logos only | The service is not running: `systemctl --user status ddj1000-screens`. |
 | Screens stop updating after restarting the service | Restart Mixxx as well. |
 | Crackles | Log out/in after installing (real-time priority), raise the audio buffer in Mixxx. |
+| BPM on the jog screen shows 999.99 when the tempo moves | Update: fixed in the current version (reinstall with `./install.sh`). |
 
 To remove everything: `./uninstall.sh`
 
