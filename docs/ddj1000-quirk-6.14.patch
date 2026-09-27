@@ -1,0 +1,71 @@
+diff -ru orig/sound/usb/quirks.c src/sound/usb/quirks.c
+--- orig/sound/usb/quirks.c	2026-09-27 09:23:49.258286834 +0300
++++ src/sound/usb/quirks.c	2026-09-27 09:24:08.546859036 +0300
+@@ -1870,6 +1870,7 @@
+ 		break;
+ 	case USB_ID(0x2b73, 0x000a): /* Pioneer DJM-900NXS2 */
+ 	case USB_ID(0x2b73, 0x0013): /* Pioneer DJM-450 */
++	case USB_ID(0x2b73, 0x0020): /* Pioneer DDJ-1000 */
+ 		pioneer_djm_set_format_quirk(subs, 0x0082);
+ 		break;
+ 	case USB_ID(0x08e4, 0x017f): /* Pioneer DJM-750 */
+diff -ru orig/sound/usb/quirks-table.h src/sound/usb/quirks-table.h
+--- orig/sound/usb/quirks-table.h	2026-09-27 09:23:49.258862188 +0300
++++ src/sound/usb/quirks-table.h	2026-09-27 09:24:08.546328559 +0300
+@@ -3133,6 +3133,56 @@
+ 
+ {
+ 	/*
++	 * Pioneer DJ / AlphaTheta DDJ-1000
++	 * PCM is 6 channels out, 12 channels in @ 44.1 fixed, S24_3LE
++	 * The Feedback for the output is the input
++	 */
++	USB_DEVICE_VENDOR_SPEC(0x2b73, 0x0020),
++	QUIRK_DRIVER_INFO {
++		QUIRK_DATA_COMPOSITE {
++			{
++				QUIRK_DATA_AUDIOFORMAT(0) {
++					.formats = SNDRV_PCM_FMTBIT_S24_3LE,
++					.channels = 6,
++					.iface = 0,
++					.altsetting = 1,
++					.altset_idx = 1,
++					.endpoint = 0x01,
++					.ep_attr = USB_ENDPOINT_XFER_ISOC|
++						USB_ENDPOINT_SYNC_ASYNC,
++					.rates = SNDRV_PCM_RATE_44100,
++					.rate_min = 44100,
++					.rate_max = 44100,
++					.nr_rates = 1,
++					.rate_table = (unsigned int[]) { 44100 }
++				}
++			},
++			{
++				QUIRK_DATA_AUDIOFORMAT(0) {
++					.formats = SNDRV_PCM_FMTBIT_S24_3LE,
++					.channels = 12,
++					.iface = 0,
++					.altsetting = 1,
++					.altset_idx = 1,
++					.endpoint = 0x82,
++					.ep_idx = 1,
++					.ep_attr = USB_ENDPOINT_XFER_ISOC|
++						USB_ENDPOINT_SYNC_ASYNC|
++					USB_ENDPOINT_USAGE_IMPLICIT_FB,
++					.rates = SNDRV_PCM_RATE_44100,
++					.rate_min = 44100,
++					.rate_max = 44100,
++					.nr_rates = 1,
++					.rate_table = (unsigned int[]) { 44100 }
++				}
++			},
++			QUIRK_COMPOSITE_END
++		}
++	}
++},
++
++{
++	/*
+ 	 * Pioneer DJ / AlphaTheta DJM-A9
+ 	 * 10 channels playback & 12 channels capture @ 44.1/48/96kHz S24LE
+ 	 */

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxMIDIPreset schemaVersion="1" mixxxVersion="2.5">
+    <info>
+        <name>Pioneer DDJ-1000 Screens</name>
+        <author>Generated for the ddj1000-screens service</author>
+        <description>Sends deck state to the ddj1000-screens service, which drives the DDJ-1000 jog screens. Enable it for the "DDJ-1000 Screens" MIDI device; keep the "Pioneer DDJ-1000" mapping on the DDJ itself.</description>
+    </info>
+    <controller id="DDJ-1000 Screens">
+        <scriptfiles>
+            <file functionprefix="PioneerDDJ1000Screens" filename="Pioneer-DDJ-1000-Screens-script.js"/>
+        </scriptfiles>
+        <controls/>
+        <outputs/>
+    </controller>
+</MixxxMIDIPreset>

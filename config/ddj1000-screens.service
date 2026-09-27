@@ -1,0 +1,11 @@
+[Unit]
+Description=DDJ-1000 jog screens for Mixxx (rekordbox-style login + HID display)
+After=sound.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/.local/share/ddj1000-screens/ddj1000_screens.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,4 @@
+# Pioneer DJ / AlphaTheta DDJ-1000: let the logged-in user drive the jog
+# screens (HID) and send the audio-driver vendor request (USB device node).
+KERNEL=="hidraw*", ATTRS{idVendor}=="2b73", ATTRS{idProduct}=="0020", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2b73", ATTR{idProduct}=="0020", MODE="0660", TAG+="uaccess"
