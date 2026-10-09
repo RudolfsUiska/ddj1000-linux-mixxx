@@ -58,7 +58,8 @@ PioneerDDJ1000.vinylMode = true;
 PioneerDDJ1000.alpha = 1.0 / 8;
 PioneerDDJ1000.beta = PioneerDDJ1000.alpha / 32;
 PioneerDDJ1000.bendScale = 0.8;
-PioneerDDJ1000.searchScale = 100;
+// SHIFT/SEARCH + jog scrubs through the track: seconds moved per jog tick.
+PioneerDDJ1000.searchSecondsPerTick = 0.02;
 
 PioneerDDJ1000.tempoRanges = [0.06, 0.10, 0.16, 0.25, 0.50, 1.00];
 
@@ -573,9 +574,8 @@ PioneerDDJ1000.jogSearch = function(channel, control, value, status, group) {
     if (duration <= 0) {
         return;
     }
-    // One tick moves ~1/100 s times the search scale.
     const position = engine.getValue(group, "playposition") +
-        ticks * PioneerDDJ1000.searchScale / 100 / duration / 10;
+        ticks * PioneerDDJ1000.searchSecondsPerTick / duration;
     engine.setValue(group, "playposition", Math.max(0, Math.min(1, position)));
 };
 

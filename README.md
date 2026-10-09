@@ -88,6 +88,9 @@ On the DDJ-1000, set every channel's **INPUT SELECT** switch to the USB port
   FX state, LEVEL/DEPTH is the dry/wet mix, BEAT </> changes the effect's
   main parameter (e.g. echo time; SHIFT for fine steps).
 - **Color FX** knobs control each channel's quick effect (filter).
+- **SHIFT + jog** (or SEARCH + jog) scrubs through the track,
+  0.02 s per jog tick; change `PioneerDDJ1000.searchSecondsPerTick` in
+  `Pioneer-DDJ-1000-script.js` to make it faster or slower.
 - **Loading** with the BROWSE knob into a playing deck works only when that
   deck is silent (channel fader down, or crossfader fully on the other side);
   the deck is stopped and the new track loaded. An audible deck is protected.
