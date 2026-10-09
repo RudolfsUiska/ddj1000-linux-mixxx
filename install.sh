@@ -97,6 +97,15 @@ else
         "$MIXXX_CONTROLLERS/Pioneer-DDJ-1000-script.js"
 fi
 
+step "Loading the Beat FX effects into Mixxx effect units 1 and 2"
+if pgrep -f "bin/mixxx" >/dev/null; then
+    echo "Mixxx is running - close it and run: python3 $REPO/mixxx/setup_beatfx.py"
+elif [ -f "$HOME/.mixxx/effects.xml" ]; then
+    python3 "$REPO/mixxx/setup_beatfx.py"
+else
+    echo "Start and close Mixxx once, then run: python3 $REPO/mixxx/setup_beatfx.py"
+fi
+
 if [ "$SCREENS" = 1 ]; then
     step "Installing the jog-screen service"
     mkdir -p "$PREFIX/labels" "$HOME/.config/systemd/user"

@@ -3179,6 +3179,22 @@
                 <options><script-binding/></options>
             </control>
             <control>
+                <description>BEAT FX ON state (rekordbox mode)</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerDDJ1000.fxOnState</key>
+                <status>0x94</status>
+                <midino>0x46</midino>
+                <options><script-binding/></options>
+            </control>
+            <control>
+                <description>BEAT FX OFF state (rekordbox mode)</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerDDJ1000.fxOnState</key>
+                <status>0x84</status>
+                <midino>0x46</midino>
+                <options><script-binding/></options>
+            </control>
+            <control>
                 <description>SHIFT+BEAT FX ON/OFF - all off</description>
                 <group>[EffectRack1_EffectUnit1]</group>
                 <key>PioneerDDJ1000.fxAllOff</key>

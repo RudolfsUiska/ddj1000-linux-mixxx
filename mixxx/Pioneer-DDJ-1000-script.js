@@ -23,7 +23,7 @@
 //     (quick effect), headphone cue, channel VU meters
 //   * Pads, 8 modes x 2 pages: hot cue, pad FX (rolls), beat jump, sampler,
 //     keyboard, pad FX 2 (brake/spinback/...), beat loop, key shift
-//   * Beat FX -> Mixxx effect unit 1 on CH1-4, MASTER (main output) or SAMPLER
+//   * Beat FX -> fixed effects in Mixxx units 1-2 (setup_beatfx.py) on CH1-4, MASTER or SAMPLER
 //   * Jog displays: BPM, tempo, elapsed/remaining time, key, sync state,
 //     platter position and cue marker
 //   * Browser and loading into all four decks
@@ -136,6 +136,23 @@ PioneerDDJ1000.fxChannelSelect = {
     0x16: "samplers",
 };
 
+// Beat FX SELECT position (note 0x20-0x2D on channel 4) -> [effect unit, slot].
+// Units 1 and 2 hold fixed effects, written by setup_beatfx.py:
+//   unit 1: Echo, Reverb, Flanger, Phaser
+//   unit 2: Tremolo, Moog ladder filter, Bitcrusher, Autopan
+PioneerDDJ1000.fxSlots = {
+    0x20: [1, 1], 0x21: [1, 1], 0x22: [1, 1],   // LOW CUT ECHO, ECHO, MT DELAY -> Echo
+    0x23: [1, 2], 0x24: [1, 2],                 // SPIRAL, REVERB -> Reverb
+    0x25: [2, 1],                               // TRANS -> Tremolo
+    0x26: [1, 3], 0x27: [1, 3],                 // ENIGMA JET, FLANGER -> Flanger
+    0x28: [1, 4],                               // PHASER -> Phaser
+    0x29: [2, 2],                               // PITCH -> Moog filter sweep
+    0x2A: [2, 3], 0x2B: [2, 3],                 // SLIP ROLL, ROLL -> Bitcrusher
+    0x2C: [2, 4], 0x2D: [2, 4],                 // MOBIUS SAW/TRI -> Autopan
+};
+PioneerDDJ1000.fxUnits = [1, 2];
+PioneerDDJ1000.fxSlotsPerUnit = 4;
+
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
@@ -145,8 +162,7 @@ PioneerDDJ1000.padPage = [0, 0, 0, 0];
 PioneerDDJ1000.shift = [false, false, false, false];
 PioneerDDJ1000.msb = {};
 PioneerDDJ1000.lastDisplay = [{}, {}, {}, {}];
-PioneerDDJ1000.fxSelectLast = null;
-PioneerDDJ1000.fxTarget = null;
+PioneerDDJ1000.fx = {selected: 0x21, on: false, targets: ["[Master]"]};
 PioneerDDJ1000.displayTimer = 0;
 PioneerDDJ1000.connections = [];
 
@@ -278,14 +294,7 @@ PioneerDDJ1000.init = function() {
         PioneerDDJ1000.send(0x96, 0x63, value ? 0x7F : 0x00);
     });
 
-    PioneerDDJ1000.connect("[EffectRack1_EffectUnit1]", "focused_effect", PioneerDDJ1000.fxLed);
-    for (let i = 1; i <= 3; i++) {
-        PioneerDDJ1000.connect("[EffectRack1_EffectUnit1_Effect" + i + "]", "enabled", PioneerDDJ1000.fxLed);
-    }
-    engine.setValue("[EffectRack1_EffectUnit1]", "show_focus", 1);
-    if (engine.getValue("[EffectRack1_EffectUnit1]", "focused_effect") === 0) {
-        engine.setValue("[EffectRack1_EffectUnit1]", "focused_effect", 1);
-    }
+    PioneerDDJ1000.applyFx();
 
     for (let deck = 0; deck < PioneerDDJ1000.numDecks; deck++) {
         PioneerDDJ1000.renderPads(deck);
@@ -680,33 +689,62 @@ PioneerDDJ1000.samplerCue = function(channel, control, value) {
 // Beat FX -> effect unit 1
 // ---------------------------------------------------------------------------
 
-PioneerDDJ1000.fxFocusedGroup = function() {
-    const focused = engine.getValue("[EffectRack1_EffectUnit1]", "focused_effect") || 1;
-    return "[EffectRack1_EffectUnit1_Effect" + focused + "]";
+// The DDJ-1000 keeps the Beat FX state itself and reports it: FX SELECT and
+// CH SELECT as the new position (note on) and the old one (note off), FX ON
+// as note 0x46 on/off. Mixxx follows that state: only the selected effect
+// slot is enabled, and only its unit is routed to the CH SELECT target.
+PioneerDDJ1000.fxUnitGroup = function(unit) {
+    return "[EffectRack1_EffectUnit" + unit + "]";
 };
 
-PioneerDDJ1000.fxLed = function() {
-    const on = engine.getValue(PioneerDDJ1000.fxFocusedGroup(), "enabled") ? 0x7F : 0x00;
-    PioneerDDJ1000.send(0x94, 0x47, on);
-    PioneerDDJ1000.send(0x94, 0x43, on);
+PioneerDDJ1000.fxSlotGroup = function(unit, slot) {
+    return "[EffectRack1_EffectUnit" + unit + "_Effect" + slot + "]";
 };
 
-// FX SELECT is an absolute selector (notes 0x20-0x2D); step the focused
-// effect in the direction it was turned.
-PioneerDDJ1000.fxSelect = function(channel, control, value) {
-    if (!value) {
+PioneerDDJ1000.fxAllGroups = function() {
+    const groups = ["[Master]"];
+    for (let deck = 0; deck < PioneerDDJ1000.numDecks; deck++) {
+        groups.push(PioneerDDJ1000.deckGroup(deck));
+    }
+    for (let i = 1; i <= PioneerDDJ1000.numSamplers; i++) {
+        groups.push("[Sampler" + i + "]");
+    }
+    return groups;
+};
+
+PioneerDDJ1000.applyFx = function() {
+    const fx = PioneerDDJ1000.fx;
+    const active = PioneerDDJ1000.fxSlots[fx.selected] || [1, 1];
+    const groups = PioneerDDJ1000.fxAllGroups();
+    PioneerDDJ1000.fxUnits.forEach(function(unit) {
+        const unitGroup = PioneerDDJ1000.fxUnitGroup(unit);
+        const isActive = unit === active[0];
+        engine.setValue(unitGroup, "enabled", 1);
+        groups.forEach(function(group) {
+            engine.setValue(unitGroup, "group_" + group + "_enable",
+                isActive && fx.targets.indexOf(group) >= 0 ? 1 : 0);
+        });
+        for (let slot = 1; slot <= PioneerDDJ1000.fxSlotsPerUnit; slot++) {
+            engine.setValue(PioneerDDJ1000.fxSlotGroup(unit, slot), "enabled",
+                fx.on && isActive && slot === active[1] ? 1 : 0);
+        }
+        if (isActive) {
+            engine.setValue(unitGroup, "focused_effect", active[1]);
+        }
+    });
+};
+
+// FX SELECT position (note on = new position; note off for the old one is ignored).
+PioneerDDJ1000.fxSelect = function(channel, control, value, status) {
+    if (!value || (status & 0xF0) === 0x80 || !(control in PioneerDDJ1000.fxSlots)) {
         return;
     }
-    const last = PioneerDDJ1000.fxSelectLast;
-    PioneerDDJ1000.fxSelectLast = control;
-    if (last === null || last === control) {
-        return;
-    }
-    engine.setValue(PioneerDDJ1000.fxFocusedGroup(), control > last ? "next_effect" : "prev_effect", 1);
+    PioneerDDJ1000.fx.selected = control;
+    PioneerDDJ1000.applyFx();
 };
 
-PioneerDDJ1000.fxChannel = function(channel, control, value) {
-    if (!value) {
+PioneerDDJ1000.fxChannel = function(channel, control, value, status) {
+    if (!value || (status & 0xF0) === 0x80) {
         return;
     }
     let targets = PioneerDDJ1000.fxChannelSelect[control] || [];
@@ -716,65 +754,56 @@ PioneerDDJ1000.fxChannel = function(channel, control, value) {
             targets.push("[Sampler" + i + "]");
         }
     }
-    PioneerDDJ1000.fxTarget = targets;
-    const unit = "[EffectRack1_EffectUnit1]";
-    const all = ["[Master]"];
-    for (let deck = 0; deck < PioneerDDJ1000.numDecks; deck++) {
-        all.push(PioneerDDJ1000.deckGroup(deck));
-    }
-    for (let i = 1; i <= PioneerDDJ1000.numSamplers; i++) {
-        all.push("[Sampler" + i + "]");
-    }
-    all.forEach(function(group) {
-        engine.setValue(unit, "group_" + group + "_enable", targets.indexOf(group) >= 0 ? 1 : 0);
-    });
+    PioneerDDJ1000.fx.targets = targets;
+    PioneerDDJ1000.applyFx();
 };
 
 PioneerDDJ1000.fxLevel = function(channel, control, value, status) {
     const full = PioneerDDJ1000.fourteenBit(status, control, value);
-    if (full !== undefined) {
-        engine.setParameter("[EffectRack1_EffectUnit1]", "mix", full / 0x3FFF);
+    if (full === undefined) {
+        return;
     }
+    PioneerDDJ1000.fxUnits.forEach(function(unit) {
+        engine.setParameter(PioneerDDJ1000.fxUnitGroup(unit), "mix", full / 0x3FFF);
+    });
 };
 
+// FX ON state reported by the unit (rekordbox mode): note 0x46 on/off.
+PioneerDDJ1000.fxOnState = function(channel, control, value, status) {
+    PioneerDDJ1000.fx.on = (status & 0xF0) === 0x90 && value > 0;
+    PioneerDDJ1000.applyFx();
+};
+
+// FX ON/OFF button press (plain MIDI mode): toggle.
 PioneerDDJ1000.fxOnOff = function(channel, control, value) {
     if (value) {
-        script.toggleControl(PioneerDDJ1000.fxFocusedGroup(), "enabled");
+        PioneerDDJ1000.fx.on = !PioneerDDJ1000.fx.on;
+        PioneerDDJ1000.applyFx();
     }
 };
 
 PioneerDDJ1000.fxAllOff = function(channel, control, value) {
-    if (!value) {
-        return;
-    }
-    for (let i = 1; i <= 3; i++) {
-        engine.setValue("[EffectRack1_EffectUnit1_Effect" + i + "]", "enabled", 0);
+    if (value) {
+        PioneerDDJ1000.fx.on = false;
+        PioneerDDJ1000.applyFx();
     }
 };
 
-PioneerDDJ1000.fxFocus = function(step) {
+// BEAT < / >: the selected effect's main parameter (e.g. echo time), in steps.
+PioneerDDJ1000.fxMeta = function(step) {
     return function(channel, control, value) {
         if (!value) {
             return;
         }
-        let focused = engine.getValue("[EffectRack1_EffectUnit1]", "focused_effect") || 1;
-        focused = ((focused - 1 + step) % 3 + 3) % 3 + 1;
-        engine.setValue("[EffectRack1_EffectUnit1]", "focused_effect", focused);
+        const active = PioneerDDJ1000.fxSlots[PioneerDDJ1000.fx.selected] || [1, 1];
+        const group = PioneerDDJ1000.fxSlotGroup(active[0], active[1]);
+        engine.setParameter(group, "meta", Math.max(0, Math.min(1, engine.getParameter(group, "meta") + step)));
     };
 };
-PioneerDDJ1000.fxBeatLeft = PioneerDDJ1000.fxFocus(-1);
-PioneerDDJ1000.fxBeatRight = PioneerDDJ1000.fxFocus(1);
-
-PioneerDDJ1000.fxMeta = function(step) {
-    return function(channel, control, value) {
-        if (value) {
-            const group = PioneerDDJ1000.fxFocusedGroup();
-            engine.setParameter(group, "meta", Math.max(0, Math.min(1, engine.getParameter(group, "meta") + step)));
-        }
-    };
-};
-PioneerDDJ1000.fxBeatLeftShift = PioneerDDJ1000.fxMeta(-1 / 16);
-PioneerDDJ1000.fxBeatRightShift = PioneerDDJ1000.fxMeta(1 / 16);
+PioneerDDJ1000.fxBeatLeft = PioneerDDJ1000.fxMeta(-1 / 8);
+PioneerDDJ1000.fxBeatRight = PioneerDDJ1000.fxMeta(1 / 8);
+PioneerDDJ1000.fxBeatLeftShift = PioneerDDJ1000.fxMeta(-1 / 32);
+PioneerDDJ1000.fxBeatRightShift = PioneerDDJ1000.fxMeta(1 / 32);
 
 // ---------------------------------------------------------------------------
 // Pads

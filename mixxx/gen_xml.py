@@ -131,6 +131,8 @@ for m, name in zip(range(0x10, 0x17), ("CH1", "CH2", "CH3", "CH4", "MASTER", "MI
     script(f"BEAT FX CH SELECT {name}", 0x94, m, U, "fxChannel")
 script14("BEAT FX LEVEL/DEPTH", 0xB4, 0x02, U, "fxLevel")
 script("BEAT FX ON/OFF", 0x94, 0x47, U, "fxOnOff")
+script("BEAT FX ON state (rekordbox mode)", 0x94, 0x46, U, "fxOnState")
+script("BEAT FX OFF state (rekordbox mode)", 0x84, 0x46, U, "fxOnState")
 script("SHIFT+BEAT FX ON/OFF - all off", 0x94, 0x43, U, "fxAllOff")
 script("BEAT < - focus previous effect", 0x94, 0x4A, U, "fxBeatLeft")
 script("BEAT > - focus next effect", 0x94, 0x4B, U, "fxBeatRight")

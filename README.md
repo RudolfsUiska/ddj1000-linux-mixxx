@@ -69,10 +69,24 @@ On the DDJ-1000, set every channel's **INPUT SELECT** switch to the USB port
 - **Mixing** happens in Mixxx; faders, EQs, trims and the crossfader are
   plain MIDI. The **master, booth and headphone knobs** and the mic inputs
   work in the controller's hardware.
-- **Beat FX** controls Mixxx effect unit 1: CH SELECT picks CH1-CH4, MASTER
-  (Mixxx's main output) or SAMPLER; MIC is not processed (analog in the unit).
-  FX SELECT steps through effects, LEVEL/DEPTH is the dry/wet mix, ON/OFF
-  switches the effect, BEAT </> picks the effect slot.
+- **Beat FX** uses Mixxx effect units 1 and 2, loaded with fixed effects by
+  `mixxx/setup_beatfx.py` (run by the installer; Mixxx must be closed):
+
+  | FX SELECT | Mixxx effect |
+  |---|---|
+  | LOW CUT ECHO, ECHO, MT DELAY | Echo |
+  | SPIRAL, REVERB | Reverb |
+  | ENIGMA JET, FLANGER | Flanger |
+  | PHASER | Phaser |
+  | TRANS | Tremolo |
+  | PITCH | Moog ladder filter (Mixxx has no pitch-shift effect here) |
+  | SLIP ROLL, ROLL | Bitcrusher |
+  | MOBIUS | Autopan |
+
+  CH SELECT picks CH1-CH4, MASTER (Mixxx's main output) or SAMPLER; MIC is
+  not processed (it is analog in the unit). ON/OFF follows the unit's own
+  FX state, LEVEL/DEPTH is the dry/wet mix, BEAT </> changes the effect's
+  main parameter (e.g. echo time; SHIFT for fine steps).
 - **Color FX** knobs control each channel's quick effect (filter).
 - **Loading** with the BROWSE knob into a playing deck works only when that
   deck is silent (channel fader down, or crossfader fully on the other side);
