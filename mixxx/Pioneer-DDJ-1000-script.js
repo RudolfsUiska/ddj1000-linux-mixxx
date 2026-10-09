@@ -362,8 +362,35 @@ PioneerDDJ1000.browsePress = function(channel, control, value) {
         engine.setValue("[Library]", "GoToItem", 1);
         return;
     }
-    const deck = control - 0x46;
-    engine.setValue(PioneerDDJ1000.deckGroup(deck), "LoadSelectedTrack", 1);
+    PioneerDDJ1000.loadTrack(control - 0x46);
+};
+
+// Can this deck be heard? Silent = channel fader down, or the crossfader
+// fully on the other side of an assigned deck.
+PioneerDDJ1000.deckAudible = function(group) {
+    if (engine.getValue(group, "volume") <= 0.001) {
+        return false;
+    }
+    const crossfader = engine.getValue("[Master]", "crossfader");
+    const orientation = engine.getValue(group, "orientation");
+    if ((orientation === 0 && crossfader >= 0.99) || (orientation === 2 && crossfader <= -0.99)) {
+        return false;
+    }
+    return true;
+};
+
+// Load the selected track. A playing deck is replaced only when it is silent
+// (it is stopped first, so Mixxx's playing-track protection allows the load);
+// an audible playing deck is left alone.
+PioneerDDJ1000.loadTrack = function(deck) {
+    const group = PioneerDDJ1000.deckGroup(deck);
+    if (engine.getValue(group, "play")) {
+        if (PioneerDDJ1000.deckAudible(group)) {
+            return;
+        }
+        engine.setValue(group, "play", 0);
+    }
+    engine.setValue(group, "LoadSelectedTrack", 1);
 };
 
 PioneerDDJ1000.browseShiftPress = function(channel, control, value) {

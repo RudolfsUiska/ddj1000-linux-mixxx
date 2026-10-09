@@ -72,6 +72,9 @@ On the DDJ-1000, set every channel's **INPUT SELECT** switch to the USB port
 - **Beat FX** controls Mixxx effect unit 1 when CH SELECT is CH1-CH4. With
   CH SELECT on MASTER the controller's own Beat FX is used.
 - **Color FX** knobs control each channel's quick effect (filter).
+- **Loading** with the BROWSE knob into a playing deck works only when that
+  deck is silent (channel fader down, or crossfader fully on the other side);
+  the deck is stopped and the new track loaded. An audible deck is protected.
 - **Key lock** (MASTER TEMPO) is switched on for all decks when Mixxx
   starts, so changing the tempo keeps the key (130 BPM in 2A stays 2A at
   140 BPM). MASTER TEMPO toggles it per deck. To start with it off, set
