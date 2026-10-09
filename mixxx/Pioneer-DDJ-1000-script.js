@@ -47,6 +47,11 @@ PioneerDDJ1000.hardwareHeadphones = true;
 // so they are only sent when this is false.
 PioneerDDJ1000.screensService = true;
 
+// Key lock (MASTER TEMPO) on for all decks at startup, so tempo changes keep
+// the track's key (a 130 BPM track in 2A stays 2A at 140 BPM). MASTER TEMPO
+// still toggles it per deck.
+PioneerDDJ1000.keylockOnStart = true;
+
 // Jog wheel ticks per platter revolution (CC 0x22 on a full turn).
 PioneerDDJ1000.jogResolution = 2048;
 PioneerDDJ1000.vinylMode = true;
@@ -205,6 +210,9 @@ PioneerDDJ1000.init = function() {
         const group = PioneerDDJ1000.deckGroup(deck);
         const status = 0x90 + deck;
         engine.softTakeover(group, "rate", true);
+        if (PioneerDDJ1000.keylockOnStart) {
+            engine.setValue(group, "keylock", 1);
+        }
 
         const led = function(control, notes) {
             PioneerDDJ1000.connect(group, control, function(value) {

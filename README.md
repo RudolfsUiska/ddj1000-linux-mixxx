@@ -72,6 +72,10 @@ On the DDJ-1000, set every channel's **INPUT SELECT** switch to the USB port
 - **Beat FX** controls Mixxx effect unit 1 when CH SELECT is CH1-CH4. With
   CH SELECT on MASTER the controller's own Beat FX is used.
 - **Color FX** knobs control each channel's quick effect (filter).
+- **Key lock** (MASTER TEMPO) is switched on for all decks when Mixxx
+  starts, so changing the tempo keeps the key (130 BPM in 2A stays 2A at
+  140 BPM). MASTER TEMPO toggles it per deck. To start with it off, set
+  `PioneerDDJ1000.keylockOnStart = false;` in `Pioneer-DDJ-1000-script.js`.
 - **Pads**: hot cue, pad FX (loop rolls), beat jump, sampler, keyboard,
   pad FX 2 (brake, spinback, reverse roll, stutter, rolls), beat loop and
   key shift; PAGE buttons switch to page 2.
