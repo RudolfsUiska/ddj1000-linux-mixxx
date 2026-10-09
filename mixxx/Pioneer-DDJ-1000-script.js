@@ -23,7 +23,7 @@
 //     (quick effect), headphone cue, channel VU meters
 //   * Pads, 8 modes x 2 pages: hot cue, pad FX (rolls), beat jump, sampler,
 //     keyboard, pad FX 2 (brake/spinback/...), beat loop, key shift
-//   * Beat FX -> Mixxx effect unit 1 (CH1-4); MASTER is left to the hardware
+//   * Beat FX -> Mixxx effect unit 1 on CH1-4, MASTER (main output) or SAMPLER
 //   * Jog displays: BPM, tempo, elapsed/remaining time, key, sync state,
 //     platter position and cue marker
 //   * Browser and loading into all four decks
@@ -126,11 +126,14 @@ PioneerDDJ1000.keyCodes = [
     0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12, 0x14, 0x16, 0x18, 0x02, 0x04, 0x06,
 ];
 
-// Beat FX CH SELECT notes (channel 4) -> Mixxx group, or null for sources
-// that only the hardware can process.
+// Beat FX CH SELECT notes (channel 4) -> the Mixxx groups effect unit 1
+// processes. Mixxx does the mixing, so MASTER means Mixxx's main output.
+// MIC goes into the unit's analog circuit, which Mixxx cannot process.
 PioneerDDJ1000.fxChannelSelect = {
-    0x10: "[Channel1]", 0x11: "[Channel2]", 0x12: "[Channel3]", 0x13: "[Channel4]",
-    0x14: null, 0x15: null, 0x16: null,   // MASTER, MIC, SAMPLER
+    0x10: ["[Channel1]"], 0x11: ["[Channel2]"], 0x12: ["[Channel3]"], 0x13: ["[Channel4]"],
+    0x14: ["[Master]"],
+    0x15: [],
+    0x16: "samplers",
 };
 
 // ---------------------------------------------------------------------------
@@ -706,12 +709,25 @@ PioneerDDJ1000.fxChannel = function(channel, control, value) {
     if (!value) {
         return;
     }
-    const target = PioneerDDJ1000.fxChannelSelect[control];
-    PioneerDDJ1000.fxTarget = target;
-    for (let deck = 0; deck < PioneerDDJ1000.numDecks; deck++) {
-        const group = PioneerDDJ1000.deckGroup(deck);
-        engine.setValue("[EffectRack1_EffectUnit1]", "group_" + group + "_enable", group === target ? 1 : 0);
+    let targets = PioneerDDJ1000.fxChannelSelect[control] || [];
+    if (targets === "samplers") {
+        targets = [];
+        for (let i = 1; i <= PioneerDDJ1000.numSamplers; i++) {
+            targets.push("[Sampler" + i + "]");
+        }
     }
+    PioneerDDJ1000.fxTarget = targets;
+    const unit = "[EffectRack1_EffectUnit1]";
+    const all = ["[Master]"];
+    for (let deck = 0; deck < PioneerDDJ1000.numDecks; deck++) {
+        all.push(PioneerDDJ1000.deckGroup(deck));
+    }
+    for (let i = 1; i <= PioneerDDJ1000.numSamplers; i++) {
+        all.push("[Sampler" + i + "]");
+    }
+    all.forEach(function(group) {
+        engine.setValue(unit, "group_" + group + "_enable", targets.indexOf(group) >= 0 ? 1 : 0);
+    });
 };
 
 PioneerDDJ1000.fxLevel = function(channel, control, value, status) {
