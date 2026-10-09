@@ -211,12 +211,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 1 LOOP IN</description>
+                <description>Deck 1 LOOP IN / 1/2X (halves a playing loop)</description>
                 <group>[Channel1]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.loopIn</key>
                 <status>0x90</status>
                 <midino>0x10</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 1 SHIFT+LOOP IN - halve loop</description>
@@ -227,12 +227,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 1 LOOP OUT</description>
+                <description>Deck 1 LOOP OUT / 2X (doubles a playing loop)</description>
                 <group>[Channel1]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.loopOut</key>
                 <status>0x90</status>
                 <midino>0x11</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 1 SHIFT+LOOP OUT - double loop</description>
@@ -755,12 +755,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 2 LOOP IN</description>
+                <description>Deck 2 LOOP IN / 1/2X (halves a playing loop)</description>
                 <group>[Channel2]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.loopIn</key>
                 <status>0x91</status>
                 <midino>0x10</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 2 SHIFT+LOOP IN - halve loop</description>
@@ -771,12 +771,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 2 LOOP OUT</description>
+                <description>Deck 2 LOOP OUT / 2X (doubles a playing loop)</description>
                 <group>[Channel2]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.loopOut</key>
                 <status>0x91</status>
                 <midino>0x11</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 2 SHIFT+LOOP OUT - double loop</description>
@@ -1299,12 +1299,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 3 LOOP IN</description>
+                <description>Deck 3 LOOP IN / 1/2X (halves a playing loop)</description>
                 <group>[Channel3]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.loopIn</key>
                 <status>0x92</status>
                 <midino>0x10</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 3 SHIFT+LOOP IN - halve loop</description>
@@ -1315,12 +1315,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 3 LOOP OUT</description>
+                <description>Deck 3 LOOP OUT / 2X (doubles a playing loop)</description>
                 <group>[Channel3]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.loopOut</key>
                 <status>0x92</status>
                 <midino>0x11</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 3 SHIFT+LOOP OUT - double loop</description>
@@ -1843,12 +1843,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 4 LOOP IN</description>
+                <description>Deck 4 LOOP IN / 1/2X (halves a playing loop)</description>
                 <group>[Channel4]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.loopIn</key>
                 <status>0x93</status>
                 <midino>0x10</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 4 SHIFT+LOOP IN - halve loop</description>
@@ -1859,12 +1859,12 @@
                 <options><normal/></options>
             </control>
             <control>
-                <description>Deck 4 LOOP OUT</description>
+                <description>Deck 4 LOOP OUT / 2X (doubles a playing loop)</description>
                 <group>[Channel4]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.loopOut</key>
                 <status>0x93</status>
                 <midino>0x11</midino>
-                <options><normal/></options>
+                <options><script-binding/></options>
             </control>
             <control>
                 <description>Deck 4 SHIFT+LOOP OUT - double loop</description>

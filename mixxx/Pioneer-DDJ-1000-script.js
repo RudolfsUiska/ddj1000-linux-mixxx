@@ -436,6 +436,28 @@ PioneerDDJ1000.syncLeader = function(channel, control, value, status, group) {
     }
 };
 
+// LOOP IN (1/2X) and LOOP OUT (2X): set the loop points, or halve/double the
+// loop while one is playing, as printed on the unit.
+PioneerDDJ1000.loopIn = function(channel, control, value, status, group) {
+    if (engine.getValue(group, "loop_enabled")) {
+        if (value) {
+            engine.setValue(group, "loop_halve", 1);
+        }
+        return;
+    }
+    engine.setValue(group, "loop_in", value ? 1 : 0);
+};
+
+PioneerDDJ1000.loopOut = function(channel, control, value, status, group) {
+    if (engine.getValue(group, "loop_enabled")) {
+        if (value) {
+            engine.setValue(group, "loop_double", 1);
+        }
+        return;
+    }
+    engine.setValue(group, "loop_out", value ? 1 : 0);
+};
+
 PioneerDDJ1000.fourBeatLoop = function(channel, control, value, status, group) {
     if (!value) {
         return;
